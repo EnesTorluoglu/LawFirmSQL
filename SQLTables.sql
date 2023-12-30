@@ -1,17 +1,18 @@
 USE master
 GO
 
-CREATE DATABASE LawFirm
+CREATE DATABASE MyLawFirm
 GO
 
-USE LawFirm
+USE MyLawFirm
 GO
 
+-- TABLES
 
 CREATE TABLE Employee (
     Ssn NVARCHAR(12) PRIMARY KEY,
-    [Name] NVARCHAR (50) NULL,
-    [LastName]  NVARCHAR (50) NULL,
+    [Name] NVARCHAR (50) NOT NULL,
+    [LastName]  NVARCHAR (50) NOT NULL,
 );
 
 CREATE TABLE EmployeePhoneContact(
@@ -29,8 +30,8 @@ Create Table EmployeeEmailContact(
 
 )
 CREATE TABLE Representative(
+    RepresentativeNo int IDENTITY(200,1) PRIMARY KEY,
     SSN NVARCHAR(12),
-    RepresentativeNo int,
  FOREIGN KEY (SSN) REFERENCES Employee(SSN)
     
 )
@@ -41,12 +42,12 @@ CREATE TABLE Account(
    BankName NVARCHAR(20) NOT NULL
 )
 CREATE TABLE Manager(
-    ManagerNo int PRIMARY KEY,
+    ManagerNo int IDENTITY(500,5) PRIMARY KEY,
     Ssn NVARCHAR(12),
      FOREIGN KEY (SSN) REFERENCES Employee(SSN)
 )
 CREATE TABLE Lawyer(
-    LawyerNo int PRIMARY KEY,
+    LawyerNo int IDENTITY(1,1) PRIMARY KEY,
     Ssn NVARCHAR(12),
     FOREIGN KEY (SSN) REFERENCES Employee(SSN),
     AccountId int,
@@ -99,8 +100,10 @@ ReceiverNo int,
 SenderNo int,
 TotalDebt DECIMAL(10, 2),
 LeftAmountOfDebt DECIMAL(10, 2),
-FirstDateOfPayment DATE,
-LastDateOfPayment DATE,
+FirstDateOfPayment DATE CHECK (FirstDateOfPayment <= DATEADD(MONTH, 6, GETDATE())),
+--This makes sure new payments are started at most 6 months later than today
+LastDateOfPayment AS (DATEADD(MONTH, 6, FirstDateOfPayment)),
+--Client should pay the debt at most in 6 months
 IsResolved BIT,
 FOREIGN KEY (ReceiverNo) REFERENCES Lawyer(LawyerNo),
 FOREIGN KEY (SenderNo) REFERENCES Client(customerNo)
@@ -118,9 +121,8 @@ CREATE TABLE Trial(
 TrialNo int PRIMARY KEY,
 TrialType NVARCHAR(50),
 Alias NVARCHAR(30),
-StartDate date,
-EndDate date,
-isResolved BIT,
+TrialDate date,
+isCaseResolved BIT DEFAULT 0,
 )
 
 CREATE TABLE [Case](
@@ -148,10 +150,10 @@ CREATE TABLE AssosiatedLawyer(
   FOREIGN KEY (caseNo) REFERENCES [Case](caseNo)
 )
 
-CREATE TABLE LawyerAtCourt(
-	LawyerNo int,
+CREATE TABLE RepresenativeAtCourt(
+	RepresentativeNo int,
 	TrialNo int
-	FOREIGN KEY (LawyerNo) REFERENCES Lawyer(LawyerNo),
+	FOREIGN KEY (RepresentativeNo) REFERENCES Representative(RepresentativeNo),
 	FOREIGN KEY (TrialNo) REFERENCES Trial(TrialNo)
 )
 
@@ -162,4 +164,16 @@ CREATE TABLE AssociatedCase(
 	FOREIGN KEY (TrialNo) REFERENCES Trial(TrialNo)
 )
 
-/*non clustered index for trial startdate -> enddate*/
+-- INDECES 
+
+CREATE UNIQUE INDEX index_IBAN
+ON Account(IBAN)
+
+CREATE INDEX index_Transactions
+ON [Transaction](PaymentId)
+
+CREATE INDEX index_PaymentDate
+ON Payment(FirstDateOfPayment, LastDateOfPayment)
+
+CREATE INDEX index_TrialDate
+ON Trial(TrialDate)
