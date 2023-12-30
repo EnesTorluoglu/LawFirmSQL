@@ -1,0 +1,165 @@
+USE master
+GO
+
+CREATE DATABASE LawFirm
+GO
+
+USE LawFirm
+GO
+
+
+CREATE TABLE Employee (
+    Ssn NVARCHAR(12) PRIMARY KEY,
+    [Name] NVARCHAR (50) NULL,
+    [LastName]  NVARCHAR (50) NULL,
+);
+
+CREATE TABLE EmployeePhoneContact(
+ PhoneId NVARCHAR(10) PRIMARY KEY,
+ SSN NVARCHAR(12),
+ PhoneNumber NVARCHAR(20) NOT NULL,
+ FOREIGN KEY (Ssn) REFERENCES Employee (SSN)
+)
+
+Create Table EmployeeEmailContact(
+  EmailId int PRIMARY KEY,
+  SSN NVARCHAR(12),
+  Email NVARCHAR(20) NOT NULL,
+  FOREIGN KEY (SSN) REFERENCES Employee (SSN)
+
+)
+CREATE TABLE Representative(
+    SSN NVARCHAR(12),
+    RepresentativeNo int,
+ FOREIGN KEY (SSN) REFERENCES Employee(SSN)
+    
+)
+
+CREATE TABLE Account(
+   AccountId int Primary KEY,
+   IBAN  NVARCHAR(30) UNIQUE NOT NULL,
+   BankName NVARCHAR(20) NOT NULL
+)
+CREATE TABLE Manager(
+    ManagerNo int PRIMARY KEY,
+    Ssn NVARCHAR(12),
+     FOREIGN KEY (SSN) REFERENCES Employee(SSN)
+)
+CREATE TABLE Lawyer(
+    LawyerNo int PRIMARY KEY,
+    Ssn NVARCHAR(12),
+    FOREIGN KEY (SSN) REFERENCES Employee(SSN),
+    AccountId int,
+    ManagerNo int,
+     FOREIGN KEY (AccountId) REFERENCES Account(AccountId),
+     FOREIGN KEY (ManagerNo) REFERENCES Manager(ManagerNo)
+)
+CREATE TABLE Client(
+   CustomerNo int PRIMARY KEY,
+)
+CREATE TABLE PersonClient(
+    Ssn NVARCHAR(12) Primary KEY,
+    [FirstName] NVARCHAR(20),
+    [SurName] NVARCHAR(30),
+	CustomerNo int,
+	FOREIGN KEY (CustomerNo) REFERENCES Client(CustomerNo)
+)
+CREATE TABLE CompanyClient(
+    Companyname NVARCHAR(50) PRIMARY KEY,
+	CustomerNo int,
+	FOREIGN KEY (CustomerNo) REFERENCES Client(CustomerNo)
+)
+CREATE TABLE CompanyAddress(
+   Street VARCHAR(100),
+    City VARCHAR(50),
+    State VARCHAR(50),
+    PostalCode VARCHAR(20),
+    CompanyName NVARCHAR(50),
+FOREIGN KEY (CompanyName) REFERENCES CompanyClient(CompanyName)
+)
+
+
+CREATE TABLE ClientPhoneContact(
+      PhoneId NVARCHAR(10) PRIMARY KEY,
+	  PhoneNumber NVARCHAR(20) NOT NULL,
+      CustomerNo int,
+      FOREIGN KEY (customerNo) REFERENCES Client(customerNo)
+)
+CREATE TABLE ClientEmailContact(
+      EmailNo int PRIMARY KEY,
+	  Email NVARCHAR(20) NOT NULL,
+      CustomerNo int,
+      FOREIGN KEY (customerNo) REFERENCES Client(customerNo)
+)
+
+
+CREATE TABLE Payment(
+PaymentId int PRIMARY KEY,
+ReceiverNo int,
+SenderNo int,
+TotalDebt DECIMAL(10, 2),
+LeftAmountOfDebt DECIMAL(10, 2),
+FirstDateOfPayment DATE,
+LastDateOfPayment DATE,
+IsResolved BIT,
+FOREIGN KEY (ReceiverNo) REFERENCES Lawyer(LawyerNo),
+FOREIGN KEY (SenderNo) REFERENCES Client(customerNo)
+)
+
+CREATE TABLE [Transaction](
+TransactionAmount DECIMAL(10, 2),
+PaymentId int,
+CustomerNo int,
+FOREIGN KEY (PaymentId) REFERENCES Payment(PaymentId),
+FOREIGN KEY (CustomerNo) REFERENCES Client(CustomerNo)
+)
+
+CREATE TABLE Trial(
+TrialNo int PRIMARY KEY,
+TrialType NVARCHAR(50),
+Alias NVARCHAR(30),
+StartDate date,
+EndDate date,
+isResolved BIT,
+)
+
+CREATE TABLE [Case](
+    CaseNo int PRIMARY KEY,
+    CaseType NVARCHAR(30),
+    
+)
+CREATE TABLE RelevancyPeriod(
+    StartDate DATE,
+    EndDate DATE,
+     CaseNo int,
+     FOREIGN KEY (CaseNo) REFERENCES [CASE](CaseNo) 
+
+)
+CREATE TABLE AssosiatedCustomer(
+  CustomerNo int,
+  CaseNo int,
+  FOREIGN KEY (customerNo) REFERENCES Client(CustomerNo),
+  FOREIGN KEY (caseNo) REFERENCES [Case](CaseNo)
+)
+CREATE TABLE AssosiatedLawyer(
+  LawyerNo int,
+  CaseNo int,
+  FOREIGN KEY (LawyerNo) REFERENCES Lawyer(LawyerNo),
+  FOREIGN KEY (caseNo) REFERENCES [Case](caseNo)
+)
+
+CREATE TABLE LawyerAtCourt(
+	LawyerNo int,
+	TrialNo int
+	FOREIGN KEY (LawyerNo) REFERENCES Lawyer(LawyerNo),
+	FOREIGN KEY (TrialNo) REFERENCES Trial(TrialNo)
+)
+
+CREATE TABLE AssociatedCase(
+	TrialNo int,
+	CaseNo int
+	FOREIGN KEY (CaseNo) REFERENCES [Case](CaseNo),
+	FOREIGN KEY (TrialNo) REFERENCES Trial(TrialNo)
+)
+
+/*non clustered index for trial startdate -> enddate*/
