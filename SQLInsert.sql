@@ -1,4 +1,4 @@
-USE MyLawFirm
+USE LawFirm
 GO
 
 insert into Employee values
@@ -794,7 +794,7 @@ insert into RelevancyPeriod values
 ('2022/06/21',null,  90380)
 
 insert into Trial (TrialNo,TrialType,TrialDate) values
-(1, 'Normal', '2023/01/10'),
+(1, 'Normal', '2022/01/10'),
 (2, 'Normal', '2023/02/10'),
 (3, 'Normal', '2023/02/10'),
 (4, 'Normal', '2023/01/10'),

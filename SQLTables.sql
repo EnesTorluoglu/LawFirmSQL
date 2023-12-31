@@ -1,10 +1,10 @@
 USE master
 GO
 
-CREATE DATABASE MyLawFirm
+CREATE DATABASE LawFirm
 GO
 
-USE MyLawFirm
+USE LawFirm
 GO
 
 -- TABLES

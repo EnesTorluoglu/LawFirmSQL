@@ -1,5 +1,8 @@
 -- TRIGGERS
 
+USE LawFirm
+GO
+
 -- 1
 -- This trigger controls the inserted transaction if there is no payment with
 --given ID in transaction, this trigger deletes transaction. If nothing is wrong
@@ -33,7 +36,19 @@ CREATE OR ALTER TRIGGER t_InsertTransaction ON [Transaction]
 		print 'Transaction is created. Left amount of debt in payment table is updated'
 	END
 
-
-/*INSERT INTO [Transaction] (TransactionAmount, PaymentId, CustomerNo)
-SELECT i.TransactionAmount, i.PaymentId, CustomerNo FROM inserted i;
-*/
+-- 2
+-- When a trial is resolved, cases associated with the trial
+--are also updated as resolved
+CREATE OR ALTER TRIGGER t_TrialIsResolved ON [Trial] 
+	AFTER UPDATE
+	AS
+	BEGIN
+		IF((SELECT i.isCaseResolved FROM inserted i) = 1)
+		BEGIN
+			UPDATE c
+			SET c.IsResolved = 1
+			FROM inserted i
+			inner join AssociatedCase ac on i.TrialNo = ac.TrialNo
+			inner join [Case] c on ac.CaseNo = c.CaseNo
+		END
+	END

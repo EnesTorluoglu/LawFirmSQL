@@ -1,8 +1,11 @@
 -- STORED PROCEDURES
 
+USE LawFirm
+GO
+
 --1
 -- Returns table with clients phone number of lawyer.
---Lawyers Id is taken as paramerter
+--Lawyers Id is taken as paramerter.
 CREATE OR ALTER PROCEDURE GetClientsOfLawyer
 	(@LawyerId int)
 	AS
@@ -19,6 +22,8 @@ CREATE OR ALTER PROCEDURE GetClientsOfLawyer
 exec GetClientsOfLawyer 22
 
 --2
+-- Returns table with cases of lawyer.
+--Lawyers Id is taken as paramerter.
 CREATE OR ALTER PROCEDURE GetCasesOfLawyer
 	(@LawyerId int)
 	AS
@@ -30,10 +35,11 @@ CREATE OR ALTER PROCEDURE GetCasesOfLawyer
 	WHERE 	al.LawyerNo = @LawyerId
 	
 	END
-exec GetCasesOfLawyer 22
 
---3
-/* check later*/ 
+exec GetCasesOfLawyer 1
+ 
+-- 3
+-- This function shows remaining debt of the customer.
 CREATE OR ALTER PROCEDURE RemainingDebt
 	(@CustomerId int)
 	AS
@@ -61,9 +67,11 @@ CREATE OR ALTER PROCEDURE RemainingDebt
 	END
 
 exec RemainingDebt 1001
+exec RemainingDebt 1003
 
-
---4
+-- 4
+-- This function changes lawyer of given case.
+--Two lawyer Ids are given as parameter. 
 CREATE OR ALTER PROCEDURE spChangeLawyerAtCase
 	(@OldLawyerId int, @NewLawyerId int, @CaseId int)
 	AS
@@ -99,10 +107,10 @@ CREATE OR ALTER PROCEDURE spChangeLawyerAtCase
 		print 'Lawyers are changed'
 	END
 
-exec ChangeLawyerAtCase 13, 10, 1050
+exec spChangeLawyerAtCase 13, 10, 1050
 
---5
-/*manager can check his lawyers and no of cases they are working on*/
+-- 5
+-- Manager can check his lawyers and number of cases they are working on
 CREATE OR ALTER PROCEDURE sp_GetManagedLawyers
 	(@ManagerNo INT)
 	AS
@@ -116,48 +124,30 @@ CREATE OR ALTER PROCEDURE sp_GetManagedLawyers
 		ORDER BY COUNT(al.CaseNo) DESC
 	END
 
-exec sp_GetManagedLawyers 1
+exec sp_GetManagedLawyers 500
 
-
-/* lawyer's unpaid amount, by clients, resolved case*/ 
-/* assolaw->case, case period, case->assoclient,(assoclient->client, for name),
-assoclient->payment, payment.recno=lawyer.no, sum(leftdebts)*/
-/*TODO*/
-CREATE OR ALTER PROCEDURE sp_GetUnpaidAmount
-	(@LawyerNo INT)
-	AS
-	BEGIN
-		SELECT al.LawyerNo, ac.CustomerNo, ac.CaseNo, p.TotalDebt
-		FROM AssosiatedLawyer al
-		inner join [Case] c on c.CaseNo = al.CaseNo
-		inner join AssosiatedCustomer ac on ac.CaseNo = c.CaseNo
-		inner join Payment p on p.SenderNo = ac.CustomerNo,
-		Client cl
-		WHERE (al.LawyerNo = @LawyerNo)
-			AND (cl.CustomerNo = ac.CustomerNo)
-			AND (p.ReceiverNo = @LawyerNo)
-	END
-
---6
-/*TODO: CHANGE FirstDateOfPayment to LastDateOfPayment*/
+-- 6
+-- Lawyers can see their customers who needs to pay them
+--until given date
 CREATE OR ALTER PROCEDURE sp_GetCustomersInDebt
 	(@LawyerNo INT, @LastDate DATE)
 	AS
 	BEGIN
-		SELECT p.LeftAmountOfDebt, p.LastDateOfPayment, c.CustomerNo, cp.PhoneNumber, ce.Email, p.FirstDateOfPayment
+		SELECT p.LeftAmountOfDebt, p.LastDateOfPayment, c.CustomerNo, cp.PhoneNumber, ce.Email
 		FROM Payment p 
 		inner join Client c on c.CustomerNo = p.SenderNo
 		inner join ClientEmailContact ce on ce.CustomerNo = c.CustomerNo
 		inner join ClientPhoneContact cp on cp.CustomerNo = c.CustomerNo
 		WHERE (p.ReceiverNo = @LawyerNo)
-			AND p.FirstDateOfPayment < @LastDate
-		ORDER BY p.FirstDateOfPayment DESC
+			AND p.LastDateOfPayment < @LastDate
+			AND p.LeftAmountOfDebt > 0
+		ORDER BY p.LastDateOfPayment DESC
 	END
 
-exec sp_GetCustomersInDebt 1, '2025-01-30'
+exec sp_GetCustomersInDebt 5, '2025-01-30'
 
---7
--- Returns list of case types and how man clients company have in this case type.
+-- 7
+-- Returns list of case types and how many clients company have in this case type.
 CREATE OR ALTER PROCEDURE sp_GetCaseAndClientTypes
 	AS
 	BEGIN
@@ -172,6 +162,7 @@ CREATE OR ALTER PROCEDURE sp_GetCaseAndClientTypes
 		inner join AssosiatedCustomer ac on ac.CaseNo = c.CaseNo
 		inner join CompanyClient cc on cc.CustomerNo = ac.CustomerNo
 		GROUP BY c.CaseType
+		ORDER BY c.CaseType
 	END
 
 exec sp_GetCaseAndClientTypes
@@ -267,47 +258,38 @@ CREATE OR ALTER PROCEDURE sp_MakeTransaction
 
 exec sp_MakeTransaction 5193827064560296703924404416, 5000, 6990
 
--- 11 
--- Manager can appoint trial to their own lawyers
+-- 11
+-- Manager can appoint trial to their own representatives
 CREATE OR ALTER PROCEDURE sp_AppointTrial
-	(@ManagerNo int, @LawyerToAppoint int, @TrialNo int)
+	(@ManagerNo int, @RepresentativeToAppoint int, @TrialNo int)
 	AS
 	BEGIN
-		IF(@ManagerNo != (SELECT l.ManagerNo FROM Lawyer l))
+		IF(@ManagerNo != (SELECT l.ManagerNo 
+							FROM Representative r left join Lawyer l  on l.Ssn = r.SSN 
+							WHERE r.RepresentativeNo = @RepresentativeToAppoint))
 		BEGIN
-			print 'You are not the manager of this lawyer. You can only appoint lawyers you are manager of.'
+			print 'You are not the manager of this lawyer. You can only appoint lawyer you are manager of'
 			return -1
 		END
-	
-	-- TODO: Add more checks like if trail is already resolved or outdated.
+		
+		IF((SELECT t.TrialDate FROM Trial t WHERE t.TrialNo = 10) < GETDATE())
+		BEGIN
+			print 'This trial has already concluded, no need to appoint a new representative'
+			return -1
+		END
 
-	INSERT INTO LawyerAtCourt VALUES 
-	(@LawyerToAppoint, @TrialNo)
+		IF EXISTS (SELECT 1 FROM RepresentativeAtCourt rc WHERE rc.RepresentativeNo = @RepresentativeToAppoint AND rc.TrialNo = @TrialNo)
+		BEGIN
+			print 'This representative is already appointed to this trail'
+			return -1
+		END
+
+		INSERT INTO RepresentativeAtCourt VALUES 
+		(@RepresentativeToAppoint, @TrialNo)
+		print 'Appointment is done'
 		
 	END
 
-
-
-/*cases with at least @num trials*/
-
-/*
-client.no,person.name as name
-case join client 
-company
-person
-where if(client.no = company.clientno) @name = company.name
-		if(client.no = person.clientno) @name = person.name
-
-person.name or
-*/
-/*
-select c.CustomerNo, p.FirstName as Name
-from Client c
-inner join PersonClient p on  p.CustomerNo = c.CustomerNo
-UNION
-select c.CustomerNo, cc.CompanyName as Name
-from Client c
-inner join CompanyClient cc on  cc.CustomerNo = c.CustomerNo
-*/
-
- /*c.name + ' ' + c.surname as full name */
+exec sp_AppointTrial 505, 208, 1
+exec sp_AppointTrial 505, 201, 1
+exec sp_AppointTrial 505, 201, 19
