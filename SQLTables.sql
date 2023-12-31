@@ -104,7 +104,7 @@ FirstDateOfPayment DATE CHECK (FirstDateOfPayment <= DATEADD(MONTH, 6, GETDATE()
 --This makes sure new payments are started at most 6 months later than today
 LastDateOfPayment AS (DATEADD(MONTH, 6, FirstDateOfPayment)),
 --Client should pay the debt at most in 6 months
-IsResolved BIT,
+IsResolved AS (CASE WHEN LeftAmountOfDebt <= 0 THEN 1 ELSE 0 END),
 FOREIGN KEY (ReceiverNo) REFERENCES Lawyer(LawyerNo),
 FOREIGN KEY (SenderNo) REFERENCES Client(customerNo)
 )
@@ -120,7 +120,6 @@ FOREIGN KEY (CustomerNo) REFERENCES Client(CustomerNo)
 CREATE TABLE Trial(
 TrialNo int PRIMARY KEY,
 TrialType NVARCHAR(50),
-Alias NVARCHAR(30),
 TrialDate date,
 isCaseResolved BIT DEFAULT 0,
 )
@@ -128,6 +127,8 @@ isCaseResolved BIT DEFAULT 0,
 CREATE TABLE [Case](
     CaseNo int PRIMARY KEY,
     CaseType NVARCHAR(30),
+	Alias NVARCHAR(30),
+	IsResolved bit DEFAULT 0
     
 )
 CREATE TABLE RelevancyPeriod(
@@ -150,7 +151,7 @@ CREATE TABLE AssosiatedLawyer(
   FOREIGN KEY (caseNo) REFERENCES [Case](caseNo)
 )
 
-CREATE TABLE RepresenativeAtCourt(
+CREATE TABLE RepresentativeAtCourt(
 	RepresentativeNo int,
 	TrialNo int
 	FOREIGN KEY (RepresentativeNo) REFERENCES Representative(RepresentativeNo),
