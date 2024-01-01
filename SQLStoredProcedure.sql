@@ -111,7 +111,8 @@ CREATE OR ALTER PROCEDURE sp_ChangeLawyerAtCase
 		print 'Lawyers are changed'
 	END
 
-exec sp_ChangeLawyerAtCase 13, 10, 1050
+SELECT * FROM AssosiatedLawyer
+exec sp_ChangeLawyerAtCase 14, 13, 1100
 
 -- 5
 -- Manager can check his lawyers and number of cases they are working on
@@ -259,8 +260,8 @@ CREATE OR ALTER PROCEDURE sp_MakeTransaction
 			print 'Client ' + CAST(@ClientNo AS varchar(6)) + ' has ' + CAST(FORMAT (@LeftAmountOfDebt, 'N2') AS nvarchar(10)) + ' dollars remaining debt'
 
 	END
-
 exec sp_MakeTransaction 5193827064560296703924404416, 5000, 6990
+SELECT * FROM [Transaction]
 
 -- 11
 -- Manager can appoint trial to their own representatives
@@ -293,7 +294,9 @@ CREATE OR ALTER PROCEDURE sp_AppointTrial
 		print 'Appointment is done'
 		
 	END
+SELECT * FROM RepresentativeAtCourt
+exec sp_AppointTrial 505, 201, 24
+
 
 exec sp_AppointTrial 505, 208, 1
 exec sp_AppointTrial 505, 201, 1
-exec sp_AppointTrial 505, 201, 19
