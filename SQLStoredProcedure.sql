@@ -300,3 +300,74 @@ exec sp_AppointTrial 505, 201, 24
 
 exec sp_AppointTrial 505, 208, 1
 exec sp_AppointTrial 505, 201, 1
+
+
+
+-- 12
+-- Update trial as resolved
+CREATE OR ALTER PROCEDURE sp_UpdateTrialAsResolved
+	(@TrialNo int)
+	AS
+	BEGIN
+		UPDATE Trial
+		   SET isCaseResolved = 1
+		 WHERE TrialNo = @TrialNo
+	END
+
+exec sp_UpdateTrialAsResolved 13
+
+-- 13
+-- Insert new trial
+CREATE OR ALTER PROCEDURE sp_NewTrial
+	(@TrialNo int, @TrialDate Date, @CaseNo int)
+	AS
+	BEGIN
+		insert into Trial (TrialNo,TrialType,Alias,TrialDate) 
+		values
+		(@TrialNo, 'Normal',NULL, @TrialDate)
+
+		insert into AssociatedCase (TrialNo,CaseNo) 
+		values
+		(@TrialNo, @CaseNo)
+	END
+
+exec sp_NewTrial 40,'2024-01-30',2017
+
+--14
+-- Insert new case
+CREATE OR ALTER PROCEDURE sp_NewCase
+	(@CaseNo int, @CaseType nvarchar(30))
+	AS
+	BEGIN
+		insert into [Case](CaseNo,CaseType,Alias) 
+		values
+		(@CaseNo, @CaseType, NULL)
+	END
+
+exec sp_NewCase 10010, Murder
+
+--15
+-- Insert new client
+CREATE OR ALTER PROCEDURE sp_NewClient
+	(@CustomerNo int, @CustomerType int, @CompanyNameOrSsn nvarchar(50), @FirstName nvarchar(20), @SurName nvarchar(30))
+	AS
+	BEGIN
+		insert into Client(CustomerNo) 
+		values
+		(@CustomerNo)
+
+		if(@CustomerType = 0)
+			BEGIN
+			insert into PersonClient(Ssn, FirstName, SurName, CustomerNo)
+			values
+			(@CompanyNameOrSsn, @FirstName, @SurName, @CustomerNo)
+			END
+		else
+			BEGIN
+			insert into CompanyClient(Companyname, CustomerNo)
+			values
+			(@CompanyNameOrSsn, @CustomerNo)
+			END
+	END
+
+exec sp_NewClient 150,0,123456789111, 'enes', 'tor'
